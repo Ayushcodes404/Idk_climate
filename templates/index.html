@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Climate Analysis Dashboard</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .panel {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        input[type="text"] {
+            padding: 10px;
+            width: 300px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #map, #heatmap {
+            height: 400px;
+            width: 100%;
+            margin-top: 20px;
+        }
+        .results {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="panel">
+            <h1>Climate Analysis Dashboard</h1>
+            <div class="input-group">
+                <input type="text" id="location" placeholder="Enter location (e.g., 'Paris, France')">
+                <button onclick="analyzeLocation()">Analyze</button>
+            </div>
+        </div>
+
+        <div class="results">
+            <div class="panel">
+                <h2>Weather Data</h2>
+                <div id="weather-data"></div>
+            </div>
+            <div class="panel">
+                <h2>Location Map</h2>
+                <div id="map"></div>
+            </div>
+
+            <div class="panel">
+                <h2>Parameters Heatmap</h2>
+                <div id="heatmap"></div>
+            </div>
+        </div>
+        <div>
+            <div class="button">
+                <button onclick="analyzeLocation()">Know your climate story</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function analyzeLocation() {
+            const location = document.getElementById('location').value;
+            if (!location) {
+                alert('Please enter a location');
+                return;
+            }
+
+            $.ajax({
+                url: '/analyze',
+                method: 'POST',
+                data: { location: location },
+                success: function(response) {
+                    if (response.error) {
+                        alert(response.error);
+                        return;
+                    }
+
+                    $('.results').show();
+
+                    // Display weather data
+                    const weather = response.weather_data;
+                    $('#weather-data').html(`
+                        <p>Temperature: ${weather.actual_temperature_celsius}°C</p>
+                        <p>Feels Like: ${weather.apparent_temperature_celsius}°C</p>
+                        <p>Humidity: ${weather.relative_humidity_percent}%</p>
+                        <p>AQI: ${weather.us_aqi}</p>
+                        <p>PM2.5: ${weather.pm25} µg/m³</p>
+                        <p>Ozone: ${weather.ozone} µg/m³</p>
+                    `);
+
+                    // Display AI analysis
+                    $('#ai-analysis').html(response.ai_analysis);
+
+                    // Display map
+                    $('#map').html(response.map_html);
+
+                    // Display heatmap
+                    const heatmapData = JSON.parse(response.heatmap_data);
+                    Plotly.newPlot('heatmap', heatmapData.data, heatmapData.layout);
+                },
+                error: function() {
+                    alert('An error occurred while analyzing the location');
+                }
+            });
+        }
+    </script>
+</body>
+</html>
